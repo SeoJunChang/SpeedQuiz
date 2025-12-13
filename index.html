@@ -3,10 +3,11 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-	<title>구글 시트 연동 퀴즈</title>
+	<title>MZ 스피드 퀴즈</title>
 	<style>
+		/* 기존 스타일 유지 및 카테고리 뱃지 추가 */
 		*{margin:0;padding:0;box-sizing:border-box}
-		:root{--bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--accent:#3b82f6;--gold:#fbbf24;--error:#ef4444;--success:#22c55e}
+		:root{--bg:#0f172a;--bg2:#1e293b;--accent:#3b82f6;--gold:#fbbf24;--error:#ef4444;--success:#22c55e}
 		body{font-family:'Apple SD Gothic Neo',sans-serif;background:var(--bg);color:#fff;height:100vh;display:flex;justify-content:center}
 		.app{width:100%;max-width:500px;display:flex;flex-direction:column;padding:20px}
 		header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
@@ -15,31 +16,23 @@
 		.timer-bar{width:100%;height:100%;background:linear-gradient(to right, #3b82f6, #fbbf24);transition:width 0.1s linear}
 		.game-card{background:var(--bg2);border-radius:20px;padding:30px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative}
 		.question{font-size:24px;font-weight:bold;margin-bottom:30px;line-height:1.4}
-		.answer-input{width:100%;background:var(--bg3);border:2px solid transparent;padding:15px;border-radius:12px;color:#fff;font-size:24px;text-align:center;outline:none}
+		.answer-input{width:100%;background:#334155;border:2px solid transparent;padding:15px;border-radius:12px;color:#fff;font-size:24px;text-align:center;outline:none}
 		.answer-input:focus{border-color:var(--accent)}
 		.result-overlay{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:100;padding:20px}
 		.result-overlay.on{display:flex}
-		.btn{padding:15px;border:none;border-radius:15px;background:var(--accent);color:#fff;font-weight:bold;font-size:16px;cursor:pointer;width:100%}
-		.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:20px}
-		.loading{font-size:18px;color:var(--gold)}
+		.btn{padding:15px 40px;border:none;border-radius:30px;background:var(--accent);color:#fff;font-weight:bold;font-size:18px;cursor:pointer;margin-top:20px}
 	</style>
 </head>
 <body>
 	<div class="app">
 		<header>
-			<div id="status">데이터 로딩 중...</div>
+			<div id="qCount">문제 로딩 중...</div>
 			<div>점수: <span id="score">0</span></div>
 		</header>
-		<div class="progress-container"><div id="timerBar" class="timer-bar" style="width:0%"></div></div>
-
-		<div id="startScreen" class="game-card">
-			<h2 id="welcomeMsg">퀴즈를 불러오고 있습니다...</h2>
-			<div id="categoryButtons" class="cat-grid"></div>
-		</div>
-
-		<div id="gameScreen" class="game-card" style="display:none">
+		<div class="progress-container"><div id="timerBar" class="timer-bar"></div></div>
+		<div class="game-card">
 			<div id="catBadge" class="cat-badge">카테고리</div>
-			<div id="question" class="question"></div>
+			<div id="question" class="question">데이터를 불러오는 중입니다...</div>
 			<input type="text" id="answerInput" class="answer-input" placeholder="정답 입력" autocomplete="off">
 			<div id="hint" style="margin-top:20px; font-size:14px; color:var(--gold)"></div>
 		</div>
@@ -48,14 +41,10 @@
 	<div id="resultOverlay" class="result-overlay">
 		<h1>퀴즈 종료!</h1>
 		<div id="resultMsg"></div>
-		<button class="btn" style="width:200px; margin-top:20px" onclick="location.reload()">다시 시작</button>
+		<button class="btn" onclick="location.reload()">다시 시작</button>
 	</div>
 
 	<script>
-		// 구글 시트 게시판 ID (사용자님 시트 기반)
-		const SHEET_ID = '1vQwOeULvb3hcqNCTNHmUEU7bqeDPvoPs96ue-e6yAmb1t80o9SvX4bO-JK6Rw-il9vYhdKBtdvf4z5B';
-		const SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pub?output=csv`;
-
 		let allData = [];
 		let gameItems = [];
 		let curIdx = 0, score = 0, correctCount = 0, totalTime = 0;
@@ -68,51 +57,36 @@
 		const hText = document.getElementById('hint');
 		const cBadge = document.getElementById('catBadge');
 
+		// 1. 외부 JSON 불러오기
 		async function loadData() {
 			try {
-				const response = await fetch(SHEET_URL);
-				const csvText = await response.text();
-
-				// CSV 파싱
-				const rows = csvText.split('\r\n').map(row => row.split(','));
-				const headers = rows[0]; // word, clue, direct, cat, level
-
-				allData = rows.slice(1).map(row => ({
-					word: row[0]?.trim(),
-					clue: row[1]?.trim(),
-					direct: row[2]?.trim(),
-					cat: row[3]?.trim(),
-					level: row[4]?.trim()
-				})).filter(item => item.word); // 빈 줄 방지
-
-				const categories = [...new Set(allData.map(d => d.cat))];
-				renderButtons(categories);
-				document.getElementById('welcomeMsg').textContent = "카테고리를 선택하세요";
-				document.getElementById('status').textContent = "준비 완료";
+				const response = await fetch('words.json');
+				const json = await response.json();
+				allData = json.data;
+				setupGame();
 			} catch (e) {
-				document.getElementById('welcomeMsg').textContent = "시트 로드 실패!";
-				console.error(e);
+				qText.textContent = "데이터 로드 실패 (words.json 확인 필요)";
 			}
 		}
 
-		function renderButtons(categories) {
-			const container = document.getElementById('categoryButtons');
-			container.innerHTML = '';
+		// 2. 카테고리별 균형 있는 문제 선별
+		function setupGame() {
+			const categories = ["신조어", "음식", "동물", "사자성어", "영화"];
+			gameItems = [];
+
 			categories.forEach(cat => {
-				const btn = document.createElement('button');
-				btn.className = 'btn';
-				btn.textContent = cat;
-				btn.onclick = () => startGame(cat);
-				container.appendChild(btn);
+				const catWords = allData.filter(d => d.cat === cat).sort(() => Math.random() - 0.5);
+				gameItems.push(...catWords.slice(0, 2)); // 카테고리당 2개씩
 			});
-		}
 
-		function startGame(cat) {
-			const filtered = allData.filter(d => d.cat === cat);
-			gameItems = filtered.sort(() => Math.random() - 0.5).slice(0, 12);
+			// 부족한 문제는 전체에서 무작위 보충 (총 12문제)
+			const remaining = 12 - gameItems.length;
+			if(remaining > 0) {
+				const extras = allData.filter(d => !gameItems.includes(d)).sort(() => Math.random() - 0.5);
+				gameItems.push(...extras.slice(0, remaining));
+			}
 
-			document.getElementById('startScreen').style.display = 'none';
-			document.getElementById('gameScreen').style.display = 'flex';
+			gameItems.sort(() => Math.random() - 0.5);
 			startQuest();
 		}
 
@@ -123,23 +97,28 @@
 
 			cBadge.textContent = item.cat;
 			qText.textContent = item.clue;
-			hText.textContent = `💡 힌트: ${item.direct}`;
-			document.getElementById('status').textContent = `${curIdx + 1} / ${gameItems.length}`;
+			hText.textContent = `💡 직접 힌트: ${item.direct}`;
+			document.getElementById('qCount').textContent = `문제 ${curIdx + 1} / ${gameItems.length}`;
 
-			// [해결포인트 1] 입력창 초기화 및 포커스 리셋
-			aInput.blur(); // 현재 포커스 해제 (조합 중인 한글 강제 종료)
 			aInput.value = '';
-
-			setTimeout(() => {
-				aInput.focus(); // 0.1초 뒤 다시 포커스 (잔상 방지)
-			}, 100);
-
-			aInput.style.borderColor = "transparent";
+			aInput.focus();
 			startTimer();
 		}
 
+		// [입력 및 정답 체크 로직은 기존과 동일하되 최적화 적용]
 		aInput.addEventListener('input', () => {
-			if(!isProcessing && aInput.value.trim() === gameItems[curIdx].word) processCorrect();
+			if(isProcessing) return;
+			if(aInput.value.trim() === gameItems[curIdx].word) processCorrect();
+		});
+
+		aInput.addEventListener('keydown', (e) => {
+			if(e.key === 'Enter' && !isProcessing) {
+				if(aInput.value.trim() === gameItems[curIdx].word) processCorrect();
+				else {
+					aInput.style.borderColor = "var(--error)";
+					setTimeout(() => aInput.style.borderColor = "transparent", 500);
+				}
+			}
 		});
 
 		function startTimer() {
@@ -153,29 +132,20 @@
 		}
 
 		function processCorrect() {
-			if(isProcessing) return;
 			isProcessing = true;
 			clearInterval(timerInterval);
-
-			// [해결포인트 2] 정답 처리 즉시 입력창 비우기
-			aInput.style.borderColor = "var(--success)";
-
-			// 점수 및 통계 계산
 			correctCount++;
+			totalTime += (TIME_LIMIT - (timeLeft / 10));
 			score += Math.max(10, Math.ceil(timeLeft));
 			document.getElementById('score').textContent = score;
-
-			// 잠시 후 다음 문제로 이동
-			setTimeout(() => {
-				curIdx++;
-				aInput.value = ''; // 이동 직전 한 번 더 비우기
-				startQuest();
-			}, 500);
+			aInput.style.borderColor = "var(--success)";
+			setTimeout(() => { curIdx++; startQuest(); }, 400);
 		}
 
 		function processWrong() {
 			isProcessing = true;
 			clearInterval(timerInterval);
+			totalTime += TIME_LIMIT;
 			aInput.style.borderColor = "var(--error)";
 			qText.innerHTML = `<span style="color:var(--error)">시간 초과!</span><br>정답: ${gameItems[curIdx].word}`;
 			setTimeout(() => { curIdx++; startQuest(); }, 1500);
@@ -183,7 +153,13 @@
 
 		function endGame() {
 			document.getElementById('resultOverlay').classList.add('on');
-			document.getElementById('resultMsg').innerHTML = `<h2>${score}점</h2><p>${correctCount}문제 정답!</p>`;
+			const avg = (totalTime / gameItems.length).toFixed(2);
+			document.getElementById('resultMsg').innerHTML = `
+				<div style="font-size:40px; font-weight:bold; color:var(--gold); margin:20px 0">${score}점</div>
+				<div style="text-align:left; background:rgba(255,255,255,0.1); padding:20px; border-radius:15px; line-height:2">
+					🎯 정답 개수: <strong>${correctCount} / ${gameItems.length}</strong><br>
+					⚡ 평균 속도: <strong>${avg}초</strong>
+				</div>`;
 		}
 
 		window.onload = loadData;
