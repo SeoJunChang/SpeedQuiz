@@ -1,173 +1,192 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>구글 시트 연동 퀴즈</title>
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        :root{--bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--accent:#3b82f6;--gold:#fbbf24;--error:#ef4444;--success:#22c55e}
-        body{font-family:'Apple SD Gothic Neo',sans-serif;background:var(--bg);color:#fff;height:100vh;display:flex;justify-content:center}
-        .app{width:100%;max-width:500px;display:flex;flex-direction:column;padding:20px}
-        header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
-        .cat-badge{display:inline-block;padding:4px 10px;background:var(--accent);border-radius:20px;font-size:12px;margin-bottom:10px}
-        .progress-container{width:100%;height:6px;background:#334155;border-radius:3px;overflow:hidden;margin-bottom:20px}
-        .timer-bar{width:100%;height:100%;background:linear-gradient(to right, #3b82f6, #fbbf24);transition:width 0.1s linear}
-        .game-card{background:var(--bg2);border-radius:20px;padding:30px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative}
-        .question{font-size:24px;font-weight:bold;margin-bottom:30px;line-height:1.4}
-        .answer-input{width:100%;background:var(--bg3);border:2px solid transparent;padding:15px;border-radius:12px;color:#fff;font-size:24px;text-align:center;outline:none}
-        .answer-input:focus{border-color:var(--accent)}
-        .result-overlay{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:100;padding:20px}
-        .result-overlay.on{display:flex}
-        .btn{padding:15px;border:none;border-radius:15px;background:var(--accent);color:#fff;font-weight:bold;font-size:16px;cursor:pointer;width:100%}
-        .cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:20px}
-        .loading{font-size:18px;color:var(--gold)}
-    </style>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<title>구글 시트 연동 퀴즈</title>
+	<style>
+		*{margin:0;padding:0;box-sizing:border-box}
+		:root{--bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--accent:#3b82f6;--gold:#fbbf24;--error:#ef4444;--success:#22c55e}
+		body{font-family:'Apple SD Gothic Neo',sans-serif;background:var(--bg);color:#fff;height:100vh;display:flex;justify-content:center}
+		.app{width:100%;max-width:500px;display:flex;flex-direction:column;padding:20px}
+		header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
+		.cat-badge{display:inline-block;padding:4px 10px;background:var(--accent);border-radius:20px;font-size:12px;margin-bottom:10px}
+		.progress-container{width:100%;height:6px;background:#334155;border-radius:3px;overflow:hidden;margin-bottom:20px}
+		.timer-bar{width:100%;height:100%;background:linear-gradient(to right, #3b82f6, #fbbf24);transition:width 0.1s linear}
+		.game-card{background:var(--bg2);border-radius:20px;padding:30px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative}
+		.question{font-size:24px;font-weight:bold;margin-bottom:30px;line-height:1.4}
+		.answer-input{width:100%;background:var(--bg3);border:2px solid transparent;padding:15px;border-radius:12px;color:#fff;font-size:24px;text-align:center;outline:none}
+		.answer-input:focus{border-color:var(--accent)}
+		.result-overlay{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:100;padding:20px}
+		.result-overlay.on{display:flex}
+		.btn{padding:15px;border:none;border-radius:15px;background:var(--accent);color:#fff;font-weight:bold;font-size:16px;cursor:pointer;width:100%}
+		.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:20px}
+		.loading{font-size:18px;color:var(--gold)}
+	</style>
 </head>
 <body>
-    <div class="app">
-        <header>
-            <div id="status">데이터 로딩 중...</div>
-            <div>점수: <span id="score">0</span></div>
-        </header>
-        <div class="progress-container"><div id="timerBar" class="timer-bar" style="width:0%"></div></div>
-        
-        <div id="startScreen" class="game-card">
-            <h2 id="welcomeMsg">퀴즈를 불러오고 있습니다...</h2>
-            <div id="categoryButtons" class="cat-grid"></div>
-        </div>
+	<div class="app">
+		<header>
+			<div id="status">데이터 로딩 중...</div>
+			<div>점수: <span id="score">0</span></div>
+		</header>
+		<div class="progress-container"><div id="timerBar" class="timer-bar" style="width:0%"></div></div>
 
-        <div id="gameScreen" class="game-card" style="display:none">
-            <div id="catBadge" class="cat-badge">카테고리</div>
-            <div id="question" class="question"></div>
-            <input type="text" id="answerInput" class="answer-input" placeholder="정답 입력" autocomplete="off">
-            <div id="hint" style="margin-top:20px; font-size:14px; color:var(--gold)"></div>
-        </div>
-    </div>
+		<div id="startScreen" class="game-card">
+			<h2 id="welcomeMsg">퀴즈를 불러오고 있습니다...</h2>
+			<div id="categoryButtons" class="cat-grid"></div>
+		</div>
 
-    <div id="resultOverlay" class="result-overlay">
-        <h1>퀴즈 종료!</h1>
-        <div id="resultMsg"></div>
-        <button class="btn" style="width:200px; margin-top:20px" onclick="location.reload()">다시 시작</button>
-    </div>
+		<div id="gameScreen" class="game-card" style="display:none">
+			<div id="catBadge" class="cat-badge">카테고리</div>
+			<div id="question" class="question"></div>
+			<input type="text" id="answerInput" class="answer-input" placeholder="정답 입력" autocomplete="off">
+			<div id="hint" style="margin-top:20px; font-size:14px; color:var(--gold)"></div>
+		</div>
+	</div>
 
-    <script>
-        // 구글 시트 게시판 ID (사용자님 시트 기반)
-        const SHEET_ID = '1vQwOeULvb3hcqNCTNHmUEU7bqeDPvoPs96ue-e6yAmb1t80o9SvX4bO-JK6Rw-il9vYhdKBtdvf4z5B';
-        const SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pub?output=csv`;
+	<div id="resultOverlay" class="result-overlay">
+		<h1>퀴즈 종료!</h1>
+		<div id="resultMsg"></div>
+		<button class="btn" style="width:200px; margin-top:20px" onclick="location.reload()">다시 시작</button>
+	</div>
 
-        let allData = [];
-        let gameItems = [];
-        let curIdx = 0, score = 0, correctCount = 0, totalTime = 0;
-        let timeLeft = 100, timerInterval = null, isProcessing = false;
-        const TIME_LIMIT = 10;
+	<script>
+		// 구글 시트 게시판 ID (사용자님 시트 기반)
+		const SHEET_ID = '1vQwOeULvb3hcqNCTNHmUEU7bqeDPvoPs96ue-e6yAmb1t80o9SvX4bO-JK6Rw-il9vYhdKBtdvf4z5B';
+		const SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pub?output=csv`;
 
-        const qText = document.getElementById('question');
-        const aInput = document.getElementById('answerInput');
-        const tBar = document.getElementById('timerBar');
-        const hText = document.getElementById('hint');
-        const cBadge = document.getElementById('catBadge');
+		let allData = [];
+		let gameItems = [];
+		let curIdx = 0, score = 0, correctCount = 0, totalTime = 0;
+		let timeLeft = 100, timerInterval = null, isProcessing = false;
+		const TIME_LIMIT = 10;
 
-        async function loadData() {
-            try {
-                const response = await fetch(SHEET_URL);
-                const csvText = await response.text();
-                
-                // CSV 파싱
-                const rows = csvText.split('\r\n').map(row => row.split(','));
-                const headers = rows[0]; // word, clue, direct, cat, level
-                
-                allData = rows.slice(1).map(row => ({
-                    word: row[0]?.trim(),
-                    clue: row[1]?.trim(),
-                    direct: row[2]?.trim(),
-                    cat: row[3]?.trim(),
-                    level: row[4]?.trim()
-                })).filter(item => item.word); // 빈 줄 방지
+		const qText = document.getElementById('question');
+		const aInput = document.getElementById('answerInput');
+		const tBar = document.getElementById('timerBar');
+		const hText = document.getElementById('hint');
+		const cBadge = document.getElementById('catBadge');
 
-                const categories = [...new Set(allData.map(d => d.cat))];
-                renderButtons(categories);
-                document.getElementById('welcomeMsg').textContent = "카테고리를 선택하세요";
-                document.getElementById('status').textContent = "준비 완료";
-            } catch (e) {
-                document.getElementById('welcomeMsg').textContent = "시트 로드 실패!";
-                console.error(e);
-            }
-        }
+		async function loadData() {
+			try {
+				const response = await fetch(SHEET_URL);
+				const csvText = await response.text();
 
-        function renderButtons(categories) {
-            const container = document.getElementById('categoryButtons');
-            container.innerHTML = '';
-            categories.forEach(cat => {
-                const btn = document.createElement('button');
-                btn.className = 'btn';
-                btn.textContent = cat;
-                btn.onclick = () => startGame(cat);
-                container.appendChild(btn);
-            });
-        }
+				// CSV 파싱
+				const rows = csvText.split('\r\n').map(row => row.split(','));
+				const headers = rows[0]; // word, clue, direct, cat, level
 
-        function startGame(cat) {
-            const filtered = allData.filter(d => d.cat === cat);
-            gameItems = filtered.sort(() => Math.random() - 0.5).slice(0, 12);
-            
-            document.getElementById('startScreen').style.display = 'none';
-            document.getElementById('gameScreen').style.display = 'flex';
-            startQuest();
-        }
+				allData = rows.slice(1).map(row => ({
+					word: row[0]?.trim(),
+					clue: row[1]?.trim(),
+					direct: row[2]?.trim(),
+					cat: row[3]?.trim(),
+					level: row[4]?.trim()
+				})).filter(item => item.word); // 빈 줄 방지
 
-        function startQuest() {
-            if(curIdx >= gameItems.length) return endGame();
-            isProcessing = false;
-            const item = gameItems[curIdx];
-            cBadge.textContent = item.cat;
-            qText.textContent = item.clue;
-            hText.textContent = `💡 힌트: ${item.direct}`;
-            document.getElementById('status').textContent = `${curIdx + 1} / ${gameItems.length}`;
-            aInput.value = '';
-            aInput.style.borderColor = "transparent";
-            aInput.focus();
-            startTimer();
-        }
+				const categories = [...new Set(allData.map(d => d.cat))];
+				renderButtons(categories);
+				document.getElementById('welcomeMsg').textContent = "카테고리를 선택하세요";
+				document.getElementById('status').textContent = "준비 완료";
+			} catch (e) {
+				document.getElementById('welcomeMsg').textContent = "시트 로드 실패!";
+				console.error(e);
+			}
+		}
 
-        aInput.addEventListener('input', () => {
-            if(!isProcessing && aInput.value.trim() === gameItems[curIdx].word) processCorrect();
-        });
+		function renderButtons(categories) {
+			const container = document.getElementById('categoryButtons');
+			container.innerHTML = '';
+			categories.forEach(cat => {
+				const btn = document.createElement('button');
+				btn.className = 'btn';
+				btn.textContent = cat;
+				btn.onclick = () => startGame(cat);
+				container.appendChild(btn);
+			});
+		}
 
-        function startTimer() {
-            timeLeft = 100;
-            if(timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                timeLeft -= 1;
-                tBar.style.width = timeLeft + "%";
-                if(timeLeft <= 0) processWrong();
-            }, 100);
-        }
+		function startGame(cat) {
+			const filtered = allData.filter(d => d.cat === cat);
+			gameItems = filtered.sort(() => Math.random() - 0.5).slice(0, 12);
 
-        function processCorrect() {
-            isProcessing = true;
-            clearInterval(timerInterval);
-            correctCount++;
-            score += Math.max(10, Math.ceil(timeLeft));
-            document.getElementById('score').textContent = score;
-            aInput.style.borderColor = "var(--success)";
-            setTimeout(() => { curIdx++; startQuest(); }, 500);
-        }
+			document.getElementById('startScreen').style.display = 'none';
+			document.getElementById('gameScreen').style.display = 'flex';
+			startQuest();
+		}
 
-        function processWrong() {
-            isProcessing = true;
-            clearInterval(timerInterval);
-            aInput.style.borderColor = "var(--error)";
-            qText.innerHTML = `<span style="color:var(--error)">시간 초과!</span><br>정답: ${gameItems[curIdx].word}`;
-            setTimeout(() => { curIdx++; startQuest(); }, 1500);
-        }
+		function startQuest() {
+			if(curIdx >= gameItems.length) return endGame();
+			isProcessing = false;
+			const item = gameItems[curIdx];
 
-        function endGame() {
-            document.getElementById('resultOverlay').classList.add('on');
-            document.getElementById('resultMsg').innerHTML = `<h2>${score}점</h2><p>${correctCount}문제 정답!</p>`;
-        }
+			cBadge.textContent = item.cat;
+			qText.textContent = item.clue;
+			hText.textContent = `💡 힌트: ${item.direct}`;
+			document.getElementById('status').textContent = `${curIdx + 1} / ${gameItems.length}`;
 
-        window.onload = loadData;
-    </script>
+			// [해결포인트 1] 입력창 초기화 및 포커스 리셋
+			aInput.blur(); // 현재 포커스 해제 (조합 중인 한글 강제 종료)
+			aInput.value = '';
+
+			setTimeout(() => {
+				aInput.focus(); // 0.1초 뒤 다시 포커스 (잔상 방지)
+			}, 100);
+
+			aInput.style.borderColor = "transparent";
+			startTimer();
+		}
+
+		aInput.addEventListener('input', () => {
+			if(!isProcessing && aInput.value.trim() === gameItems[curIdx].word) processCorrect();
+		});
+
+		function startTimer() {
+			timeLeft = 100;
+			if(timerInterval) clearInterval(timerInterval);
+			timerInterval = setInterval(() => {
+				timeLeft -= 1;
+				tBar.style.width = timeLeft + "%";
+				if(timeLeft <= 0) processWrong();
+			}, 100);
+		}
+
+		function processCorrect() {
+			if(isProcessing) return;
+			isProcessing = true;
+			clearInterval(timerInterval);
+
+			// [해결포인트 2] 정답 처리 즉시 입력창 비우기
+			aInput.style.borderColor = "var(--success)";
+
+			// 점수 및 통계 계산
+			correctCount++;
+			score += Math.max(10, Math.ceil(timeLeft));
+			document.getElementById('score').textContent = score;
+
+			// 잠시 후 다음 문제로 이동
+			setTimeout(() => {
+				curIdx++;
+				aInput.value = ''; // 이동 직전 한 번 더 비우기
+				startQuest();
+			}, 500);
+		}
+
+		function processWrong() {
+			isProcessing = true;
+			clearInterval(timerInterval);
+			aInput.style.borderColor = "var(--error)";
+			qText.innerHTML = `<span style="color:var(--error)">시간 초과!</span><br>정답: ${gameItems[curIdx].word}`;
+			setTimeout(() => { curIdx++; startQuest(); }, 1500);
+		}
+
+		function endGame() {
+			document.getElementById('resultOverlay').classList.add('on');
+			document.getElementById('resultMsg').innerHTML = `<h2>${score}점</h2><p>${correctCount}문제 정답!</p>`;
+		}
+
+		window.onload = loadData;
+	</script>
 </body>
 </html>
