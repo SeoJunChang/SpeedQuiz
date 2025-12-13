@@ -3,21 +3,19 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-	<title>MZ 스피드 퀴즈</title>
+	<title>스피드 퀴즈: 미친 모드</title>
 	<style>
 		*{margin:0;padding:0;box-sizing:border-box}
-		:root{--bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--accent:#3b82f6;--gold:#fbbf24;--error:#ef4444;--success:#22c55e}
+		:root{--bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--accent:#3b82f6;--gold:#fbbf24;--error:#ef4444;--success:#22c55e;--crazy:#ff4757}
 		body{font-family:'Apple SD Gothic Neo',sans-serif;background:var(--bg);color:#fff;height:100vh;display:flex;justify-content:center}
 		.app{width:100%;max-width:500px;display:flex;flex-direction:column;padding:20px}
 		header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
 		.cat-badge{display:inline-block;padding:4px 10px;background:var(--accent);border-radius:20px;font-size:12px;margin-bottom:10px}
 		.progress-container{width:100%;height:6px;background:#334155;border-radius:3px;overflow:hidden;margin-bottom:20px}
 		.timer-bar{width:100%;height:100%;background:linear-gradient(to right, #3b82f6, #fbbf24);transition:width 0.1s linear}
-		
-		/* 게임 카드 및 레이아웃 */
 		.game-card{background:var(--bg2);border-radius:20px;padding:30px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative;box-shadow:0 10px 25px rgba(0,0,0,0.3)}
 		
-		/* [추가] 카테고리 선택 그리드: 자동 반응형 및 터치 최적화 */
+		/* 카테고리 그리드 및 스크롤 최적화 */
 		.cat-grid {
 			display: grid;
 			grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -27,40 +25,27 @@
 			max-height: 50vh;
 			overflow-y: auto;
 			padding: 5px;
-			-webkit-overflow-scrolling: touch; /* iOS 부드러운 스크롤 */
+			-webkit-overflow-scrolling: touch;
 		}
 		
-		.cat-grid .btn-cat {
-			padding: 15px 10px;
-			border: none;
-			border-radius: 15px;
-			background: var(--accent);
-			color: #fff;
-			font-weight: bold;
-			font-size: 16px;
-			cursor: pointer;
-			min-height: 54px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
+		.btn-cat {
+			padding: 15px 10px; border: none; border-radius: 15px; background: var(--accent);
+			color: #fff; font-weight: bold; font-size: 16px; cursor: pointer; min-height: 54px;
+			display: flex; align-items: center; justify-content: center;
 		}
+		/* 종합 문제 전용 버튼 스타일 */
+		.btn-crazy { background: var(--crazy) !important; grid-column: 1 / -1; font-size: 18px !important; }
 
-		.question{font-size:24px;font-weight:bold;margin-bottom:30px;line-height:1.4; word-break: keep-all;}
-		.answer-input{width:100%;background:var(--bg3);border:2px solid transparent;padding:15px;border-radius:12px;color:#fff;font-size:24px;text-align:center;outline:none}
+		.question{font-size:24px; font-weight:bold; margin-bottom:30px; line-height:1.4; word-break: keep-all;}
+		.answer-input{width:100%; background:var(--bg3); border:2px solid transparent; padding:15px; border-radius:12px; color:#fff; font-size:24px; text-align:center; outline:none}
 		.answer-input:focus{border-color:var(--accent)}
 		
-		.result-overlay{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:100;padding:20px}
+		.result-overlay{position:fixed; inset:0; background:var(--bg); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:100; padding:20px}
 		.result-overlay.on{display:flex}
-		.btn-main{padding:15px 40px;border:none;border-radius:30px;background:var(--accent);color:#fff;font-weight:bold;font-size:18px;cursor:pointer;margin-top:20px}
+		.btn-main{padding:15px 40px; border:none; border-radius:30px; background:var(--accent); color:#fff; font-weight:bold; font-size:18px; cursor:pointer; margin-top:20px}
 
-		/* 힌트 애니메이션 */
-		#hint { min-height: 20px; transition: all 0.3s; }
-		@keyframes fadeIn {
-			from { opacity: 0; transform: translateY(-5px); }
-			to { opacity: 1; transform: translateY(0); }
-		}
-
-		/* 스크롤바 디자인 */
+		#hint { min-height: 20px; color: var(--gold); font-size: 14px; margin-top: 20px; }
+		@keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 		.cat-grid::-webkit-scrollbar { width: 6px; }
 		.cat-grid::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 10px; }
 	</style>
@@ -68,7 +53,7 @@
 <body>
 	<div class="app">
 		<header>
-			<div id="status">데이터 로딩 중...</div>
+			<div id="status">로딩 중...</div>
 			<div>점수: <span id="score">0</span></div>
 		</header>
 		<div class="progress-container"><div id="timerBar" class="timer-bar" style="width:0%"></div></div>
@@ -82,12 +67,12 @@
 			<div id="catBadge" class="cat-badge">카테고리</div>
 			<div id="question" class="question"></div>
 			<input type="text" id="answerInput" class="answer-input" placeholder="정답 입력" autocomplete="off">
-			<div id="hint" style="margin-top:20px; font-size:14px; color:var(--gold)"></div>
+			<div id="hint"></div>
 		</div>
 	</div>
 
 	<div id="resultOverlay" class="result-overlay">
-		<h1>퀴즈 종료!</h1>
+		<h1 id="resTitle">퀴즈 종료!</h1>
 		<div id="resultMsg"></div>
 		<button class="btn-main" onclick="location.reload()">다시 시작</button>
 	</div>
@@ -97,9 +82,10 @@
 
 		let allData = [];
 		let gameItems = [];
-		let curIdx = 0, score = 0, correctCount = 0, totalTime = 0, wrongCount = 0;
+		let curIdx = 0, score = 0, correctCount = 0, wrongCount = 0;
 		let timeLeft = 100, timerInterval = null, isProcessing = false;
-		const TIME_LIMIT = 10;
+		let isCrazyMode = false;
+		let currentLimit = 10; // 기본 10초
 
 		const qText = document.getElementById('question');
 		const aInput = document.getElementById('answerInput');
@@ -115,12 +101,7 @@
 				
 				allData = rows.slice(1).map(row => {
 					const clean = (val) => val ? val.replace(/^"|"$/g, '').trim() : '';
-					return {
-						word: clean(row[0]),
-						clue: clean(row[1]),
-						direct: clean(row[2]),
-						cat: clean(row[3])
-					};
+					return { word: clean(row[0]), clue: clean(row[1]), direct: clean(row[2]), cat: clean(row[3]) };
 				}).filter(item => item.word && item.cat && item.cat !== 'MZ신조어');
 
 				const categories = [...new Set(allData.map(d => d.cat))];
@@ -134,6 +115,14 @@
 		function renderButtons(categories) {
 			const container = document.getElementById('categoryButtons');
 			container.innerHTML = '';
+			
+			// 종합 문제 버튼 추가
+			const crazyBtn = document.createElement('button');
+			crazyBtn.className = 'btn-cat btn-crazy';
+			crazyBtn.textContent = '🔥 종합 문제 (미친 모드)';
+			crazyBtn.onclick = () => startGame('CRAZY');
+			container.appendChild(crazyBtn);
+
 			categories.forEach(cat => {
 				const btn = document.createElement('button');
 				btn.className = 'btn-cat';
@@ -144,8 +133,15 @@
 		}
 
 		function startGame(cat) {
-			const filtered = allData.filter(d => d.cat === cat);
-			gameItems = filtered.sort(() => Math.random() - 0.5).slice(0, 12);
+			if(cat === 'CRAZY') {
+				isCrazyMode = true;
+				currentLimit = 5; // 종합 문제는 5초 제한
+				gameItems = allData.sort(() => Math.random() - 0.5).slice(0, 20); // 20문제
+			} else {
+				isCrazyMode = false;
+				currentLimit = 10;
+				gameItems = allData.filter(d => d.cat === cat).sort(() => Math.random() - 0.5).slice(0, 12);
+			}
 			document.getElementById('startScreen').style.display = 'none';
 			document.getElementById('gameScreen').style.display = 'flex';
 			startQuest();
@@ -157,48 +153,39 @@
 			wrongCount = 0;
 			const item = gameItems[curIdx];
 
-			cBadge.textContent = item.cat;
+			cBadge.textContent = isCrazyMode ? `🔥 종합 [${item.cat}]` : item.cat;
 			qText.textContent = item.clue;
-			hText.textContent = ""; // 초기 힌트 숨김
+			hText.textContent = ""; 
 			document.getElementById('status').textContent = `${curIdx + 1} / ${gameItems.length}`;
 
-			// 한글 잔상 해결: blur -> value 초기화 -> focus
 			aInput.blur();
 			aInput.value = '';
 			setTimeout(() => { aInput.focus(); }, 150);
-			
 			startTimer();
 		}
 
 		aInput.addEventListener('input', () => {
-			if(isProcessing) return;
-			if(aInput.value.trim() === gameItems[curIdx].word) processCorrect();
+			if(!isProcessing && aInput.value.trim() === gameItems[curIdx].word) processCorrect();
 		});
 
 		aInput.addEventListener('keydown', (e) => {
 			if(e.key === 'Enter' && !isProcessing) {
-				const val = aInput.value.trim();
-				if(val === gameItems[curIdx].word) {
+				if(aInput.value.trim() === gameItems[curIdx].word) {
 					processCorrect();
 				} else {
 					wrongCount++;
 					aInput.style.borderColor = "var(--error)";
-					if(wrongCount === 1) showHint(); // 1회 틀리면 힌트 노출
+					if(wrongCount === 1) hText.textContent = `💡 힌트: ${gameItems[curIdx].direct}`;
 					setTimeout(() => { aInput.style.borderColor = "transparent"; }, 500);
 				}
 			}
 		});
 
-		function showHint() {
-			hText.style.animation = "fadeIn 0.5s";
-			hText.textContent = `💡 힌트: ${gameItems[curIdx].direct}`;
-		}
-
 		function startTimer() {
 			timeLeft = 100;
 			if(timerInterval) clearInterval(timerInterval);
 			timerInterval = setInterval(() => {
-				timeLeft -= 1;
+				timeLeft -= (10 / currentLimit); // 모드에 따른 감소 속도 조절
 				tBar.style.width = timeLeft + "%";
 				if(timeLeft <= 0) processWrong();
 			}, 100);
@@ -208,7 +195,9 @@
 			isProcessing = true;
 			clearInterval(timerInterval);
 			correctCount++;
-			score += Math.max(10, Math.ceil(timeLeft));
+			// 종합 모드일 때 점수 2배
+			let bonus = isCrazyMode ? 2 : 1;
+			score += Math.max(10, Math.ceil(timeLeft)) * bonus;
 			document.getElementById('score').textContent = score;
 			aInput.style.borderColor = "var(--success)";
 			setTimeout(() => { curIdx++; startQuest(); }, 400);
@@ -224,6 +213,7 @@
 
 		function endGame() {
 			document.getElementById('resultOverlay').classList.add('on');
+			document.getElementById('resTitle').textContent = isCrazyMode ? "🔥 미친 모드 종료! 🔥" : "퀴즈 종료!";
 			document.getElementById('resultMsg').innerHTML = `
 				<div style="font-size:40px; font-weight:bold; color:var(--gold); margin:20px 0">${score}점</div>
 				<p>정답: ${correctCount} / ${gameItems.length}</p>`;
