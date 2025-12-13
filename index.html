@@ -20,7 +20,39 @@
         .result-overlay{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:100;padding:20px}
         .result-overlay.on{display:flex}
         .btn{padding:15px;border:none;border-radius:15px;background:var(--accent);color:#fff;font-weight:bold;font-size:16px;cursor:pointer;width:100%;margin-top:10px}
-        .cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:20px}
+        /* 카테고리 버튼들을 담는 그리드 설정 수정 */
+.cat-grid {
+    display: grid;
+    /* 화면 너비에 따라 자동으로 열 개수 조정 (최소 140px 너비) */
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+    gap: 10px;
+    width: 100%;
+    margin-top: 20px;
+    /* 내용이 많아지면 스크롤바 생성 */
+    max-height: 50vh; 
+    overflow-y: auto;
+    padding: 5px;
+}
+
+/* 버튼 디자인 살짝 조정 (가독성 향상) */
+.cat-grid .btn {
+    margin-top: 0; /* 버튼 사이 간격은 gap으로 조절 */
+    padding: 12px 10px;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 54px; /* 모바일 터치 편의성 */
+}
+
+/* 깔끔한 스크롤바 스타일 */
+.cat-grid::-webkit-scrollbar {
+    width: 6px;
+}
+.cat-grid::-webkit-scrollbar-thumb {
+    background: var(--bg3);
+    border-radius: 10px;
+}
     </style>
 </head>
 <body>
